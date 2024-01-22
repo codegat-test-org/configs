@@ -12,6 +12,8 @@ jobs:
     permissions:
       contents: write
       pull-requests: write
+    env:
+      RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -35,6 +37,11 @@ jobs:
           new_version="$major_version.$new_minor_version"
           echo "$new_version" > VERSION
 
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git commit -am "Bumped VERSION to $new_version as part of ${{ env.RUN_URL }}"
+          git push
+
           echo "before=$version" >> $GITHUB_OUTPUT
           echo "after=$new_version" >> $GITHUB_OUTPUT
 
@@ -55,6 +62,11 @@ jobs:
           new_minor_version=0
           new_version="$new_major_version.$new_minor_version"
           echo "$new_version" > VERSION
+
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git commit -am "Bumped VERSION to $new_version as part of ${{ env.RUN_URL }}"
+          git push
 
           echo "before=$version" >> $GITHUB_OUTPUT
           echo "after=$new_version" >> $GITHUB_OUTPUT
@@ -82,8 +94,6 @@ jobs:
 
       - name: Comment Failure
         if: always() && steps.result.outcome == 'failure'
-        env:
-          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         uses: thollander/actions-comment-pull-request@1d3973dc4b8e1399c0620d3f2b1aa5e795465308  #v2.4.3
         with:
           message: |

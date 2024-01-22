@@ -24,5 +24,7 @@ jobs:
       - name: Update Tag
         if: ${{ steps.truth.outputs.exists }}
         run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
           git tag $(cat VERSION)
           git push --tags
