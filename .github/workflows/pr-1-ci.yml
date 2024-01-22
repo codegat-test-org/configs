@@ -43,6 +43,7 @@ jobs:
           ref: ${{ github.base_ref }}
           fetch-depth: 0
           fetch-tags: true
+          token: ${{ secrets.GH_COMMIT_CHECK_TOKEN }}
 
       - name: Check Reproducibility
         id: check
@@ -60,9 +61,7 @@ jobs:
           git status
           git config user.name github-actions
           git config user.email github-actions@github.com
-          git commit --cleanup=verbatim -am "Updated Checksums as part of ${{ env.RUN_URL }}
-
-          request-checks: true"
+          git commit -am "Updated Checksums as part of ${{ env.RUN_URL }}"
           git log
           git push
 
