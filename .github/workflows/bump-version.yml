@@ -13,6 +13,8 @@ jobs:
       contents: write
       pull-requests: write
     steps:
+      - uses: actions/checkout@v4
+
       - name: Minor
         if: contains(github.event.comment.body, 'minor')
         id: minor
