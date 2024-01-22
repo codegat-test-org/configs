@@ -14,6 +14,9 @@ jobs:
       pull-requests: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          # checkout the head of the current PR
+          ref: refs/pull/${{ github.event.issue.number }}/head
 
       - name: Minor
         if: contains(github.event.comment.body, 'minor')
