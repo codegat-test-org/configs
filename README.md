@@ -1,3 +1,3 @@
 # configs
 
-Test
+Testing
