@@ -11,10 +11,7 @@ jobs:
   info:
     runs-on: ubuntu-latest
     steps:
-      - run: |
-          echo "${{ github.event.pull_request }}"
-          echo "${{ github.event.pull_request.head.user }}"
-          echo "${{ github.event.pull_request.head.user.type }}"
+      - run: echo "$GITHUB_CONTEXT"
 
   repro-ci:
     # run the given config and upload the checksums
