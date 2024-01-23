@@ -12,7 +12,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - run: |
-          echo "${{ github.event.pull_request.head.user.name }}"
+          echo "${{ github.event.pull_request }}"
+          echo "${{ github.event.pull_request.head.user }}"
           echo "${{ github.event.pull_request.head.user.type }}"
 
   repro-ci:
