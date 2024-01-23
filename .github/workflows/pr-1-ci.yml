@@ -8,22 +8,25 @@ on:
       - 'VERSION'
       - 'CHECKSUM'
 jobs:
-  info:
+  commit-check:
+    name: Commit Check
     runs-on: ubuntu-latest
+    outputs:
+      authorship: ${{ steps.head-commit.outputs.authorship }}
     steps:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.head_ref }}
 
-      - run: git log
-
-      - run: |
-          echo "--------------------------------------------------"
-          git log -1 --pretty=format:'%an'
+      - name: HEAD Commit Authorship
+        id: head-commit
+        run: echo "authorship=$(git log -1 --pretty=format:'%an')" >> $GITHUB_OUTPUT
 
   repro-ci:
     # run the given config and upload the checksums
-    if: github.event.pull_request.head.user.type != 'Bot'
+    needs:
+      - commit-check
+    if: needs.commit-check.outputs.authorship != 'github-actions'
     uses: codegat-test-org/actions/.github/workflows/checks.yml@main
     with:
       model-name: access-om2
