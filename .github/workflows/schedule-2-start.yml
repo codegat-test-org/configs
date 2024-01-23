@@ -1,0 +1,112 @@
+name: Scheduled Checks - Branch Specific
+on:
+  workflow_call:
+    inputs:
+      config-tag:
+        type: string
+        required: true
+        description: Tag associated with a config branch that is used in the reproducibility run
+jobs:
+  repro-ci:
+    # run the given config and upload the checksums
+    uses: codegat-test-org/actions/.github/workflows/checks.yml@main
+    with:
+      model-name: access-om2
+      environment-name: test
+      config-tag: ${{ inputs.config-tag }}
+    secrets: inherit
+    permissions:
+      contents: write
+
+  check-repro:
+    name: Check Repro Results
+    # compare the uploaded checksum with the ground truth
+    needs:
+      - repro-ci
+    runs-on: ubuntu-latest
+    env:
+      CHECKSUM_LOCAL_LOCATION: /opt/checksums
+    outputs:
+      result: ${{ steps.check.outputs.result }}
+      ground-truth-version: ${{ steps.check.outputs.ground-truth-version }}
+    steps:
+      - name: Download Newly Created Checksum
+        uses: actions/download-artifact@v3
+        with:
+          name: ${{ needs.repro-ci.outputs.artifact-name }}
+          path: ${{ env.CHECKSUM_LOCAL_LOCATION }}
+
+      - name: Checkout Last Config at ${{ github.base_ref }}
+        # This is used to have a link to correct config branch to find
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.config-tag }}
+          fetch-depth: 0
+          fetch-tags: true
+          token: ${{ secrets.GH_COMMIT_CHECK_TOKEN }}
+
+      - name: Check Reproducibility
+        id: check
+        uses: codegat-test-org/actions/.github/actions/checksum-check@main
+        with:
+          checksum-location: ${{ env.CHECKSUM_LOCAL_LOCATION }}
+
+  failed-repro:
+    name: Failed Reproduction Notifier
+    needs:
+      - check-repro
+    if: failure() || needs.check-repro.outputs.result == 'false'
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    env:
+      MODEL: access-om2
+      MODEL_URL: https://github.com/ACCESS-NRI/access-om2
+      CONFIG: access-om2-configs
+      CONFIG_URL: https://github.com/ACCESS-NRI/access-om2-configs
+      TAG_URL: https://github.com/ACCESS-NRI/access-om2-configs/tags/${{ needs.check-repro.outputs.ground-truth-version }}
+      RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+    steps:
+      - name: Create issue
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          BODY: |
+            There was a failure of a monthly reproducibility check on ${{ github.repository }}.
+            Logs, checksums and other artifacts can be found at the Failed Run Log link below.
+
+            Model: ${{ env.MODEL }}, found here: ${{ env.MODEL_URL }}
+            Config Repo: ${{ env.CONFIG }}, found here: ${{ env.CONFIG_URL }}
+            Config Tag Tested for Reproducibility: ${{ needs.check-repro.outputs.ground-truth-version }}, found here: ${{ env.TAG_URL }}
+            Failed Run Log: ${{ env.RUN_URL }}
+
+            Tagging @CodeGat
+        run: |
+          gh issue create \
+            --title "Scheduled Repro Check Failed for Config ${{ needs.check-repro.outputs.ground-truth-version }}" \
+            --label "type:repro-fail,priority:blocker" \
+            --body "${{ env.BODY }}"
+
+      # - name: Send email
+      #   uses: dawidd6/action-send-mail@dc13c734ff2b581c12c1b59958ba73d6fa95b371  #v3.10.0
+      #   with:
+      #     server_address: ${{ secrets.EMAIL_SERVER_ADDRESS }}
+      #     server_port: 465
+      #     secure: true
+      #     username: ${{ secrets.EMAIL_USERNAME }}
+      #     password: ${{ secrets.EMAIL_PASSWORD }}
+      #     to: ${{ secrets.EMAIL_FAIL_NOTIFIER_ADDRESS }}
+      #     from: GitHub Actions
+      #     priority: high
+      #     subject: |
+      #       Scheduled Repro CI Check Failed for ACCESS-NRI/access-om2-configs ${{ needs.check-repro.outputs.ground-truth-version }}
+      #     body: |
+      #       Hello,
+
+      #       This is an email notifying you of the failure of a monthly reproducibility check on ACCESS-NRI/access-om2-configs.
+      #       Logs, checksums and other artifacts can be found at the Failed Run Log link below.
+
+      #       Model: access-om2, found here: ${{ env.MODEL_URL }}
+      #       Config Repo: access-om2-configs, found here: ${{ env.CONFIG_URL }}
+      #       Config Tag Tested for Reproducibility: ${{ needs.check-repro.outputs.ground-truth-version }}, found here: ${{ env.TAG_URL }}
+      #       Failed Run Log: ${{ env.RUN_URL }}
