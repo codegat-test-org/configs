@@ -11,7 +11,13 @@ jobs:
   info:
     runs-on: ubuntu-latest
     steps:
-      - run: echo "${{ toJson(github.event.pull_request) }}"
+      - uses: actions/checkout@v4
+
+      - run: git log
+
+      - run: |
+          echo "--------------------------------------------------"
+          git log -1 --pretty=format:'%an'
 
   repro-ci:
     # run the given config and upload the checksums
