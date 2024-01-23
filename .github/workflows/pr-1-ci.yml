@@ -8,8 +8,16 @@ on:
       - 'VERSION'
       - 'CHECKSUM'
 jobs:
+  info:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          echo "${{ github.event.pull_request.head.user.name }}"
+          echo "${{ github.event.pull_request.head.user.type }}"
+
   repro-ci:
     # run the given config and upload the checksums
+    if: github.event.pull_request.head.user.type != 'Bot'
     uses: codegat-test-org/actions/.github/workflows/checks.yml@main
     with:
       model-name: access-om2
