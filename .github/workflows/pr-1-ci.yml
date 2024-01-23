@@ -11,7 +11,7 @@ jobs:
   info:
     runs-on: ubuntu-latest
     steps:
-      - run: echo "$GITHUB_CONTEXT"
+      - run: echo "${{ toJson(github.event.pull_request) }}"
 
   repro-ci:
     # run the given config and upload the checksums
