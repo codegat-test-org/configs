@@ -50,6 +50,7 @@ jobs:
         uses: codegat-test-org/actions/.github/actions/checksum-check@main
         with:
           checksum-location: ${{ env.CHECKSUM_LOCAL_LOCATION }}
+          checked-against: ${{ inputs.config-tag }}
 
   failed-repro:
     name: Failed Reproduction Notifier
