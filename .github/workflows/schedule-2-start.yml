@@ -49,6 +49,7 @@ jobs:
         id: check
         uses: codegat-test-org/actions/.github/actions/checksum-check@main
         with:
+          checksum-name: ${{ needs.repro-ci.outputs.artifact-name }}
           checksum-location: ${{ env.CHECKSUM_LOCAL_LOCATION }}
           checked-against: ${{ inputs.config-tag }}
 
