@@ -36,7 +36,7 @@ jobs:
           name: ${{ needs.repro-ci.outputs.artifact-name }}
           path: ${{ env.CHECKSUM_LOCAL_LOCATION }}
 
-      - name: Checkout Last Config at ${{ github.base_ref }}
+      - name: Checkout Last Config at ${{ inputs.config-tag }}
         # This is used to have a link to correct config branch to find
         uses: actions/checkout@v4
         with:
