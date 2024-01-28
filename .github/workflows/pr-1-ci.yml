@@ -47,34 +47,40 @@ jobs:
       result: ${{ steps.check.outputs.result }}
       ground-truth-version: ${{ steps.check.outputs.ground-truth-version }}
     steps:
-      - name: Download Newly Created Checksum
+      - name: Download Results and Checksum
         uses: actions/download-artifact@v3
         with:
           name: ${{ needs.repro-ci.outputs.artifact-name }}
           path: ${{ env.CHECKSUM_LOCAL_LOCATION }}
 
+      - name: "DEBUG: look at artifact path"
+        run: ls ${{ env.CHECKSUM_LOCAL_LOCATION }}
+
       - name: Checkout Last Config at ${{ github.base_ref }}
         # This is used to have a link to correct config branch to find
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.base_ref }}
+          ref: ${{ github.head_ref }}
           fetch-depth: 0
           fetch-tags: true
           token: ${{ secrets.GH_COMMIT_CHECK_TOKEN }}
 
-      - name: Check Reproducibility
-        id: check
-        uses: codegat-test-org/actions/.github/actions/checksum-check@main
+      - name: Add failed test annotations
+        id: tests
+        uses: EnricoMi/publish-unit-test-result-action@e780361cd1fc1b1a170624547b3ffda64787d365  #v2.12.0
         with:
-          checksum-location: ${{ env.CHECKSUM_LOCAL_LOCATION }}
+          files: ${{ env.CHECKSUM_LOCAL_LOCATION }}/TEST-*.xml
+          comment_mode: failures
+          check_run: false
+          compare_to_earlier_commit: false
+          action_fail: true
 
       - name: Move, Commit and Push Updated Checksum
-        if: steps.check.outputs.result == 'false'
+        if: steps.tests.outcome == 'failure'
         env:
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
           mv ${{ env.CHECKSUM_LOCAL_LOCATION }}/CHECKSUM CHECKSUM
-          git checkout ${{ github.head_ref }}
           git status
           git config user.name github-actions
           git config user.email github-actions@github.com
