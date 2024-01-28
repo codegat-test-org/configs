@@ -41,6 +41,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      checks: write
+      pull-requests: write
     env:
       CHECKSUM_LOCAL_LOCATION: /opt/checksums
     outputs:
