@@ -69,16 +69,21 @@ jobs:
 
       - name: Add failed test annotations
         id: tests
+        continue-on-error: true
         uses: EnricoMi/publish-unit-test-result-action/composite@e780361cd1fc1b1a170624547b3ffda64787d365  #v2.12.0
         with:
           files: ${{ env.CHECKSUM_LOCAL_LOCATION }}/test_report.xml
           comment_mode: failures
           check_run: false
+          action_fail: true
           compare_to_earlier_commit: false
           report_individual_runs: true
           report_suite_logs: any
           json_file: ${{ env.CHECKSUM_LOCAL_LOCATION }}/test_report.json
           json_test_case_results: true
+
+      - name: JSON result
+        run: cat ${{ env.CHECKSUM_LOCAL_LOCATION }}/test_report.json
 
       - name: Move, Commit and Push Updated Checksum
         if: steps.tests.outcome == 'failure'
