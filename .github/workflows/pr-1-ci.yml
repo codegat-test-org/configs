@@ -44,7 +44,7 @@ jobs:
       checks: write
       pull-requests: write
     env:
-      TESTING_LOCAL_LOCATION: /opt/artifact
+      TESTING_LOCAL_LOCATION: /opt/testing
     outputs:
       result: ${{ steps.check.outputs.result }}
       ground-truth-version: ${{ steps.check.outputs.ground-truth-version }}
@@ -83,7 +83,7 @@ jobs:
           json_test_case_results: true
 
       - name: JSON result
-        run: cat ${{ env.TESTING_LOCAL_LOCATION }}/test_report.json
+        run: cat ${{ env.TESTING_LOCAL_LOCATION }}/checksum/test_report.json
 
       - name: Move, Commit and Push Updated Checksum
         if: steps.tests.outcome == 'failure'
