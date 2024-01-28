@@ -33,7 +33,7 @@ jobs:
       environment-name: test
       config-tag: ${{ github.ref_name }}
 
-  check-repro:
+  check-checksum:
     # compare the uploaded checksum with the ground truth
     name: Check and Update Checksum
     needs:
@@ -44,22 +44,13 @@ jobs:
       checks: write
       pull-requests: write
     env:
-      CHECKSUM_LOCAL_LOCATION: /opt/checksums
+      TESTING_LOCAL_LOCATION: /opt/artifact
     outputs:
       result: ${{ steps.check.outputs.result }}
       ground-truth-version: ${{ steps.check.outputs.ground-truth-version }}
     steps:
-      - name: Download Results and Checksum
-        uses: actions/download-artifact@v4.1.1
-        with:
-          name: ${{ needs.repro-ci.outputs.artifact-name }}
-          path: ${{ env.CHECKSUM_LOCAL_LOCATION }}
-
-      - name: "DEBUG: look at artifact path"
-        run: ls ${{ env.CHECKSUM_LOCAL_LOCATION }}
-
-      - name: Checkout Last Config at ${{ github.base_ref }}
-        # This is used to have a link to correct config branch to find
+      - name: Checkout ${{ github.head_ref }}
+      # This is used to have a link to correct config branch to find
         uses: actions/checkout@v4
         with:
           ref: ${{ github.head_ref }}
@@ -67,30 +58,39 @@ jobs:
           fetch-tags: true
           token: ${{ secrets.GH_COMMIT_CHECK_TOKEN }}
 
+      - name: Download Results and Checksum
+        uses: actions/download-artifact@v4.1.1
+        with:
+          name: ${{ needs.repro-ci.outputs.artifact-name }}
+          path: ${{ env.TESTING_LOCAL_LOCATION }}
+
+      - name: "DEBUG: look at artifact path"
+        run: ls ${{ env.TESTING_LOCAL_LOCATION }}
+
       - name: Add failed test annotations
         id: tests
         continue-on-error: true
         uses: EnricoMi/publish-unit-test-result-action/composite@e780361cd1fc1b1a170624547b3ffda64787d365  #v2.12.0
         with:
-          files: ${{ env.CHECKSUM_LOCAL_LOCATION }}/test_report.xml
+          files: ${{ env.TESTING_LOCAL_LOCATION }}/test_report.xml
           comment_mode: failures
-          check_run: false
+          check_run: true
           action_fail: true
           compare_to_earlier_commit: false
           report_individual_runs: true
           report_suite_logs: any
-          json_file: ${{ env.CHECKSUM_LOCAL_LOCATION }}/test_report.json
+          json_file: ${{ env.TESTING_LOCAL_LOCATION }}/test_report.json
           json_test_case_results: true
 
       - name: JSON result
-        run: cat ${{ env.CHECKSUM_LOCAL_LOCATION }}/test_report.json
+        run: cat ${{ env.TESTING_LOCAL_LOCATION }}/test_report.json
 
       - name: Move, Commit and Push Updated Checksum
         if: steps.tests.outcome == 'failure'
         env:
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
-          mv ${{ env.CHECKSUM_LOCAL_LOCATION }}/CHECKSUM CHECKSUM
+          mv ${{ env.TESTING_LOCAL_LOCATION }}/testing testing
           git status
           git config user.name github-actions
           git config user.email github-actions@github.com
@@ -101,41 +101,41 @@ jobs:
   result:
     name: Reproduction Result Notifier
     needs:
-      - check-repro
+      - check-checksum
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write
     steps:
       - name: test checking conditions
-        run: echo "result=${{ needs.check-repro.outputs.result }} at ${{ needs.check-repro.outputs.ground-truth-version }}, ref_name=${{ github.ref_name }}"
+        run: echo "result=${{ needs.check-checksum.outputs.result }} at ${{ needs.check-checksum.outputs.ground-truth-version }}, ref_name=${{ github.ref_name }}"
       - name: Successful Release Comment
-        if: needs.check-repro.outputs.result == 'true' && startsWith(github.base_ref, 'release-')
+        if: needs.check-checksum.outputs.result == 'true' && startsWith(github.base_ref, 'release-')
         uses: thollander/actions-comment-pull-request@1d3973dc4b8e1399c0620d3f2b1aa5e795465308  #v2.4.3
         with:
           message: |
-            :white_check_mark: The Bitwise Reproducibility check succeeded when comparing against ${{ needs.check-repro.outputs.ground-truth-version }} for this Release config. :white_check_mark:
+            :white_check_mark: The Bitwise Reproducibility check succeeded when comparing against ${{ needs.check-checksum.outputs.ground-truth-version }} for this Release config. :white_check_mark:
             Consider bumping the minor version of access-om2.
             To bump the version, comment `!bump minor`.
 
       - name: Successful Dev Comment
-        if: needs.check-repro.outputs.result == 'true' && startsWith(github.base_ref, 'dev-')
+        if: needs.check-checksum.outputs.result == 'true' && startsWith(github.base_ref, 'dev-')
         uses: thollander/actions-comment-pull-request@1d3973dc4b8e1399c0620d3f2b1aa5e795465308  #v2.4.3
         with:
           message: |
-            :white_check_mark: The Bitwise Reproducibility check succeeded when comparing against ${{ needs.check-repro.outputs.ground-truth-version }} for this Dev config. :white_check_mark:
+            :white_check_mark: The Bitwise Reproducibility check succeeded when comparing against ${{ needs.check-checksum.outputs.ground-truth-version }} for this Dev config. :white_check_mark:
 
       - name: Failed Release Comment
-        if: needs.check-repro.outputs.result == 'false' && startsWith(github.base_ref, 'release-')
+        if: needs.check-checksum.outputs.result == 'false' && startsWith(github.base_ref, 'release-')
         uses: thollander/actions-comment-pull-request@1d3973dc4b8e1399c0620d3f2b1aa5e795465308  #v2.4.3
         with:
           message: |
-            :x: The Bitwise Reproducibility check failed when comparing against ${{ needs.check-repro.outputs.ground-truth-version }} for this Release config. :x:
+            :x: The Bitwise Reproducibility check failed when comparing against ${{ needs.check-checksum.outputs.ground-truth-version }} for this Release config. :x:
             Consider bumping the major version of access-om2 to account for this.
             To bump the version, comment `!bump major`.
 
       - name: Failed Dev Comment
-        if: needs.check-repro.outputs.result == 'failed' && startsWith(github.base_ref, 'dev-')
+        if: needs.check-checksum.outputs.result == 'failed' && startsWith(github.base_ref, 'dev-')
         uses: thollander/actions-comment-pull-request@1d3973dc4b8e1399c0620d3f2b1aa5e795465308  #v2.4.3
         with:
           message: |
-            :warning: The Bitwise Reproducibility check failed when comparing against ${{ needs.check-repro.outputs.ground-truth-version }} for this Dev config. :warning:
+            :warning: The Bitwise Reproducibility check failed when comparing against ${{ needs.check-checksum.outputs.ground-truth-version }} for this Dev config. :warning:
