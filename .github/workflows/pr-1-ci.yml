@@ -50,7 +50,7 @@ jobs:
       ground-truth-version: ${{ steps.check.outputs.ground-truth-version }}
     steps:
       - name: Download Results and Checksum
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4.1.1
         with:
           name: ${{ needs.repro-ci.outputs.artifact-name }}
           path: ${{ env.CHECKSUM_LOCAL_LOCATION }}
