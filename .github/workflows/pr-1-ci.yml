@@ -69,7 +69,7 @@ jobs:
         id: tests
         uses: EnricoMi/publish-unit-test-result-action@e780361cd1fc1b1a170624547b3ffda64787d365  #v2.12.0
         with:
-          files: ${{ env.CHECKSUM_LOCAL_LOCATION }}/TEST-*.xml
+          files: ${{ env.CHECKSUM_LOCAL_LOCATION }}/test_report.xml
           comment_mode: failures
           check_run: false
           compare_to_earlier_commit: false
