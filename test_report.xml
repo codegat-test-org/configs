@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="1" time="20.878" timestamp="2024-01-25T09:08:53.075580" hostname="gadi-login-03.gadi.nci.org.au"><testcase classname="access-om2-configs.test.test_bit_reproducibility.TestBitReproducibility" name="test_bit_repro_historical" time="19.603"><failure message="assert False&#10; +  where False = &lt;bound method AccessOm2.output_exists of &lt;models.accessom2.AccessOm2 object at 0x7fa3686dce80&gt;&gt;()&#10; +    where &lt;bound method AccessOm2.output_exists of &lt;models.accessom2.AccessOm2 object at 0x7fa3686dce80&gt;&gt; = &lt;models.accessom2.AccessOm2 object at 0x7fa3686dce80&gt;.output_exists&#10; +      where &lt;models.accessom2.AccessOm2 object at 0x7fa3686dce80&gt; = &lt;exp_test_helper.ExpTestHelper object at 0x7fa3687b4eb0&gt;.model">self = &lt;test_bit_reproducibility.TestBitReproducibility object at 0x7fa3687b1280&gt;, output_path = PosixPath('/scratch/tm70/jb4202/test-model-repro')
+control_path = PosixPath('/home/189/jb4202/test_configs/access-om2-release-1deg_jra_iaf')
+
+    @pytest.mark.fast
+    def test_bit_repro_historical(self, output_path: Path, control_path: Path):
+        """
+        Test that a run reproduces historical checksums
+        """
+        exp = setup_exp(control_path, output_path, "bit_repro_historical")
+
+        exp.model.set_model_runtime()
+        exp.setup_and_run()
+
+&gt;       assert exp.model.output_exists()
+E       assert False
+E        +  where False = &lt;bound method AccessOm2.output_exists of &lt;models.accessom2.AccessOm2 object at 0x7fa3686dce80&gt;&gt;()
+E        +    where &lt;bound method AccessOm2.output_exists of &lt;models.accessom2.AccessOm2 object at 0x7fa3686dce80&gt;&gt; = &lt;models.accessom2.AccessOm2 object at 0x7fa3686dce80&gt;.output_exists
+E        +      where &lt;models.accessom2.AccessOm2 object at 0x7fa3686dce80&gt; = &lt;exp_test_helper.ExpTestHelper object at 0x7fa3687b4eb0&gt;.model
+
+../../access-om2-configs/test/test_bit_reproducibility.py:31: AssertionError</failure></testcase></testsuite></testsuites>
