@@ -4,12 +4,20 @@ on:
     branches:
       - 'release-*'
       - 'dev-*'
-    paths-ignore:  # and possibly more to ignore (eg. README), check what happens if there is a change to more than just these ignored files
-      - 'VERSION'
-      - 'CHECKSUM'
+    paths-ignore:
+      # These are ignored because they don't have anything to do with the model itself
+      - .github/**
+      - tools/**
+      - doc/**
+      - .*
+      - metadata.yaml
 jobs:
   commit-check:
     name: Commit Check
+    # We run this job to check if the current commit was done during a workflow run.
+    # Such as when 'github-actions' bumps the metadata.yaml file or updates the checksums
+    # in the `testing` directory.
+    # This is so we don't recursively commit and check infinitely during this workflow.
     runs-on: ubuntu-latest
     outputs:
       authorship: ${{ steps.head-commit.outputs.authorship }}
@@ -23,61 +31,59 @@ jobs:
         run: echo "authorship=$(git log -1 --pretty=format:'%an')" >> $GITHUB_OUTPUT
 
   repro-ci:
-    # run the given config and upload the checksums
+    # run the given config on the deployment GitHub Environment (`environment-name`) and
+    # upload the checksums and test details
     needs:
       - commit-check
     if: needs.commit-check.outputs.authorship != 'github-actions'
     uses: codegat-test-org/actions/.github/workflows/checks.yml@main
     with:
       model-name: access-om2
-      environment-name: test
+      environment-name: Gadi
       config-tag: ${{ github.ref_name }}
+      test-markers: checksum
+    secrets: inherit
+    permissions:
+      contents: write
 
   check-checksum:
-    # compare the uploaded checksum with the ground truth
+    # Parse the test report and return pass/fail result
     name: Check and Update Checksum
     needs:
       - repro-ci
     runs-on: ubuntu-latest
     permissions:
       contents: write
-      checks: write
-      pull-requests: write
     env:
       TESTING_LOCAL_LOCATION: /opt/testing
     outputs:
+      # URL for the parsed test results
       check-run-url: ${{ steps.results.outputs.check-url }}
-      # old outputs
-      result: ${{ steps.check.outputs.result }}
-      ground-truth-version: ${{ steps.check.outputs.ground-truth-version }}
+      # Overall result of the checksum repro CI - `pass` (if reproducible), `fail` otherwise
+      result: ${{ steps.results.outputs.result }}
+      # Version of the checksum compared against the newly generated one
+      compared-checksum-version: ${{ steps.results.outputs.compared-checksum-version }}
     steps:
-      - name: Checkout ${{ github.head_ref }}
-      # This is used to have a link to correct config branch to find
-        uses: actions/checkout@v4
+      - name: Download Newly Created Checksum
+        uses: actions/download-artifact@v3
+        with:
+          name: ${{ needs.repro-ci.outputs.artifact-name }}
+          path: ${{ env.TESTING_LOCAL_LOCATION }}
+
+      - uses: actions/checkout@v4
         with:
           ref: ${{ github.head_ref }}
           fetch-depth: 0
           fetch-tags: true
           token: ${{ secrets.GH_COMMIT_CHECK_TOKEN }}
 
-      - name: Download Results and Checksum
-        uses: actions/download-artifact@v4.1.1
-        with:
-          name: ${{ needs.repro-ci.outputs.artifact-name }}
-          path: ${{ env.TESTING_LOCAL_LOCATION }}
-
-      - name: "DEBUG: look at artifact path"
-        run: ls ${{ env.TESTING_LOCAL_LOCATION }}
-
-      - name: Add failed test annotations
+      - name: Parse Test Report
         id: tests
-        continue-on-error: true
         uses: EnricoMi/publish-unit-test-result-action/composite@e780361cd1fc1b1a170624547b3ffda64787d365  #v2.12.0
         with:
-          files: ${{ env.TESTING_LOCAL_LOCATION }}/checksum/test_report.xml
+          files: test_report.xml
           comment_mode: off
           check_run: true
-          action_fail: true
           compare_to_earlier_commit: false
           report_individual_runs: true
           report_suite_logs: any
@@ -86,59 +92,58 @@ jobs:
         id: results
         run: |
           echo "check-url=${{ fromJson(steps.tests.outputs.json).check_url }}" >> $GITHUB_OUTPUT
-
-
-      - name: Move, Commit and Push Updated Checksum
-        if: steps.tests.outcome == 'failure'
-        env:
-          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-        run: |
-          mv ${{ env.TESTING_LOCAL_LOCATION }} testing
-          git status
-          git config user.name github-actions
-          git config user.email github-actions@github.com
-          git commit -am "Updated Checksums as part of ${{ env.RUN_URL }}"
-          git log
-          git push
+          echo "compared-checksum-version=$(git describe --tags --abbrev=0)" >> $GITHUB_OUTPUT
+          if [ "${{ fromJson(steps.tests.outputs.json).stats.tests_fail }}" > 0 ]; then
+            echo "result=fail" >> $GITHUB_OUTPUT
+          else
+            echo "result=pass" >> $GITHUB_OUTPUT
+          fi
 
   result:
-    name: Reproduction Result Notifier
+    name: Repro Result Notifier
+    # Notify the PR of the result of the Repro check
     needs:
+      - repro-ci
       - check-checksum
     runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GH_REPO: ${{ github.repository }}
     permissions:
       pull-requests: write
     steps:
-      - name: test checking conditions
-        run: echo "result=${{ needs.check-checksum.outputs.result }} at ${{ needs.check-checksum.outputs.ground-truth-version }}, ref_name=${{ github.ref_name }}"
+      - uses: actions/checkout@v4
+
       - name: Successful Release Comment
-        if: needs.check-checksum.outputs.result == 'true' && startsWith(github.base_ref, 'release-')
-        uses: thollander/actions-comment-pull-request@1d3973dc4b8e1399c0620d3f2b1aa5e795465308  #v2.4.3
-        with:
-          message: |
-            :white_check_mark: The Bitwise Reproducibility check succeeded when comparing against ${{ needs.check-checksum.outputs.ground-truth-version }} for this Release config. :white_check_mark:
-            Consider bumping the minor version of access-om2.
-            To bump the version, comment `!bump minor`.
+        if: needs.check-checksum.outputs.result == 'pass' && startsWith(github.base_ref, 'release-')
+        env:
+          BODY: |
+            :white_check_mark: The Bitwise Reproducibility check succeeded when comparing against `${{ needs.check-checksum.outputs.compared-checksum-version }}` for this `Release` config. :white_check_mark:
+            For further information, the experiment can be found on Gadi at ${{ needs.repro-ci.outputs.experiment-location }}, and the test results at ${{ needs.check-checksum.outputs.check-run-url }}.
+            Consider bumping the minor version of `access-om2-configs` - to bump the version, comment `!bump minor`. The meaning of these version bumps is explained in the README.md, under `Config Tags`.
+        run: gh pr comment --body "${{ env.BODY }}"
 
       - name: Successful Dev Comment
-        if: needs.check-checksum.outputs.result == 'true' && startsWith(github.base_ref, 'dev-')
-        uses: thollander/actions-comment-pull-request@1d3973dc4b8e1399c0620d3f2b1aa5e795465308  #v2.4.3
-        with:
-          message: |
-            :white_check_mark: The Bitwise Reproducibility check succeeded when comparing against ${{ needs.check-checksum.outputs.ground-truth-version }} for this Dev config. :white_check_mark:
+        if: needs.check-checksum.outputs.result == 'pass' && startsWith(github.base_ref, 'dev-')
+        env:
+          BODY: |
+            :white_check_mark: The Bitwise Reproducibility check succeeded when comparing against `${{ needs.check-checksum.outputs.compared-checksum-version }}` for this `Dev` config. :white_check_mark:
+            For further information, the experiment can be found on Gadi at ${{ needs.repro-ci.outputs.experiment-location }}, and the test results at ${{ needs.check-checksum.outputs.check-run-url }}.
+        run: gh pr comment --body "${{ env.BODY }}"
 
       - name: Failed Release Comment
-        if: needs.check-checksum.outputs.result == 'false' && startsWith(github.base_ref, 'release-')
-        uses: thollander/actions-comment-pull-request@1d3973dc4b8e1399c0620d3f2b1aa5e795465308  #v2.4.3
-        with:
-          message: |
-            :x: The Bitwise Reproducibility check failed when comparing against ${{ needs.check-checksum.outputs.ground-truth-version }} for this Release config. :x:
-            Consider bumping the major version of access-om2 to account for this.
-            To bump the version, comment `!bump major`.
+        if: needs.check-checksum.outputs.result == 'fail' && startsWith(github.base_ref, 'release-')
+        env:
+          BODY: |
+            :x: The Bitwise Reproducibility check failed when comparing against `${{ needs.check-checksum.outputs.compared-checksum-version }}` for this `Release` config. :x:
+            For further information, the experiment can be found on Gadi at ${{ needs.repro-ci.outputs.experiment-location }}, and the test results at ${{ needs.check-checksum.outputs.check-run-url }}.
+            You must bump the major version of `access-om2-configs` before this PR is merged to account for this - to bump the version, comment `!bump major`. The meaning of these version bumps is explained in the README.md, under `Config Tags`.
+        run: gh pr comment --body "${{ env.BODY }}"
 
       - name: Failed Dev Comment
-        if: needs.check-checksum.outputs.result == 'failed' && startsWith(github.base_ref, 'dev-')
-        uses: thollander/actions-comment-pull-request@1d3973dc4b8e1399c0620d3f2b1aa5e795465308  #v2.4.3
-        with:
-          message: |
-            :warning: The Bitwise Reproducibility check failed when comparing against ${{ needs.check-checksum.outputs.ground-truth-version }} for this Dev config. :warning:
+        if: needs.check-checksum.outputs.result == 'fail' && startsWith(github.base_ref, 'dev-')
+        env:
+          BODY: |
+            :warning: The Bitwise Reproducibility check failed when comparing against `${{ needs.check-checksum.outputs.compared-checksum-version }}` for this `Dev` config. :warning:
+            For further information, the experiment can be found on Gadi at ${{ needs.repro-ci.outputs.experiment-location }}, and the test results at ${{ needs.check-checksum.outputs.check-run-url }}.
+        run: gh pr comment --body "${{ env.BODY }}"
