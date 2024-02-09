@@ -39,7 +39,7 @@ jobs:
     uses: codegat-test-org/actions/.github/workflows/checks.yml@main
     with:
       model-name: access-om2
-      environment-name: Gadi
+      environment-name: test
       config-tag: ${{ github.ref_name }}
       test-markers: checksum
     secrets: inherit
