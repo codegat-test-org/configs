@@ -99,7 +99,7 @@ jobs:
         id: pr
         run: |
           gh pr checkout ${{ github.event.issue.number }}
-          echo "branch=$(git rev-parse --abbrev-ref HEAD) >> $GITHUB_OUTPUT
+          echo "branch=$(git rev-parse --abbrev-ref HEAD)" >> $GITHUB_OUTPUT
 
       - name: Download Newly Created Checksum
         # Given the PR branch, we need to find the latest associated workflow run
@@ -137,6 +137,8 @@ jobs:
   failure-notifier:
     name: Failure Notifier
     if: failure()
+    needs:
+      - commit
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write
