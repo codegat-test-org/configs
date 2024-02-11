@@ -32,7 +32,7 @@ jobs:
         run: |
           if [[ "${{ contains(github.event.comment.body, 'minor') }}" == "true" ]]; then
             echo "bump=minor" >> $GITHUB_OUTPUT
-          else if [[ ${{ contains(github.event.comment.body, 'major') }} == "true" ]]; then
+          elif [[ ${{ contains(github.event.comment.body, 'major') }} == "true" ]]; then
             echo "bump=major" >> $GITHUB_OUTPUT
           else
             echo "::error::Comment was not of the form: '!bump [major|minor]'"
@@ -59,7 +59,7 @@ jobs:
 
           if [[ "${{ steps.type.outputs.bump }}" == "minor" ]]; then
             minor_version=$((minor_version + 1))
-          else if [[ "${{ steps.type.outputs.bump }}" == "major" ]]; then
+          elif [[ "${{ steps.type.outputs.bump }}" == "major" ]]; then
             major_version=$((major_version + 1))
             minor_version=0
           fi
@@ -113,7 +113,7 @@ jobs:
 
           if [[ "${{ needs.bump-version.outputs.type }}" == "minor" ]]; then
             git commit -am "Bumped version to ${{ needs.bump-version.outputs.after }} as part of ${{ env.RUN_URL }}"
-          else if [[ "${{ needs.bump-version.outputs.type }}" == "major" ]]; then
+          elif [[ "${{ needs.bump-version.outputs.type }}" == "major" ]]; then
             git commit -am "Updated checksums and bumped version to ${{ needs.bump-version.outputs.after }} as part of ${{ env.RUN_URL }}"
           fi
           git push
