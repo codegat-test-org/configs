@@ -54,6 +54,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      pull-requests: write
+      checks: write
     env:
       TESTING_LOCAL_LOCATION: /opt/testing
     outputs:
@@ -75,7 +77,6 @@ jobs:
           ref: ${{ github.head_ref }}
           fetch-depth: 0
           fetch-tags: true
-          token: ${{ secrets.GH_COMMIT_CHECK_TOKEN }}
 
       - name: Parse Test Report
         id: tests
