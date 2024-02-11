@@ -106,8 +106,8 @@ jobs:
         # on this branch we can then download the associated artifact
         run: |
           associated_run=$(gh run list \
-            --json='databaseId,headBranch,updatedAt' \
-            --jq 'select(.[].headBranch == "${{ steps.pr.outputs.branch }}") |= sort_by(.updatedAt) | last | .databaseId')
+            --json='databaseId,headBranch,updatedAt,status' \
+            --jq 'select(.[].headBranch == "${{ steps.pr.outputs.branch }}" and .[].status == "completed") |= sort_by(.updatedAt) | last | .databaseId')
           gh run download $associated_run -D ${{ env.ARTIFACT_LOCAL_LOCATION }}
 
       - name: Update metadata.yaml and Checksum files
