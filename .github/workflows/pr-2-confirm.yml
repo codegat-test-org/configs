@@ -111,7 +111,7 @@ jobs:
             --jq 'select(.[].headBranch == "${{ steps.pr.outputs.branch }}" and .[].status == "completed") |= sort_by(.updatedAt) | last | .databaseId')
           echo "$associated_run"
           echo "---------------"
-          echo "gh run list --json='databaseId,headBranch,updatedAt,status'"
+          gh run list --json='databaseId,headBranch,updatedAt,status'
           gh run download $associated_run -D ${{ env.ARTIFACT_LOCAL_LOCATION }}
 
       - name: Update metadata.yaml and Checksum files
