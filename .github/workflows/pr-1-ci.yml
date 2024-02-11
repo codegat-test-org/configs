@@ -114,6 +114,8 @@ jobs:
       pull-requests: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
 
       - name: Successful Release Comment
         if: needs.check-checksum.outputs.result == 'pass' && startsWith(github.base_ref, 'release-')
