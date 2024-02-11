@@ -135,11 +135,14 @@ jobs:
     name: Failure Notifier
     if: failure()
     runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          token: ${{ secrets.GH_COMMIT_CHECK_TOKEN }}
 
       - name: Checkout Associated PR ${{ github.event.issue.number }}
         run: gh pr checkout ${{ github.event.issue.number }}
