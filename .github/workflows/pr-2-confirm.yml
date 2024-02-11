@@ -26,12 +26,6 @@ jobs:
       type: ${{ steps.bump.outputs.type }}
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          token: ${{ secrets.GH_COMMIT_CHECK_TOKEN }}
-
-      - name: Checkout Associated PR ${{ github.event.issue.number }}
-        run: gh pr checkout ${{ github.event.issue.number }}
 
       - name: Get Type of Bump
         id: type
@@ -139,6 +133,7 @@ jobs:
       pull-requests: write
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GH_REPO: ${{ github.repository }}
     steps:
       - uses: actions/checkout@v4
         with:
