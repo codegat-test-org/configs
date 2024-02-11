@@ -10,6 +10,7 @@ on:
       - created
       - edited
 env:
+  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
 jobs:
   bump-version:
@@ -26,6 +27,14 @@ jobs:
       type: ${{ steps.bump.outputs.type }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Checkout Associated PR ${{ github.event.issue.number }}
+        # Since the trigger for this workflow was on.issue_comment, we need
+        # to do a bit more wrangling to checkout the pull request
+        id: pr
+        run: gh pr checkout ${{ github.event.issue.number }}
 
       - name: Get Type of Bump
         id: type
