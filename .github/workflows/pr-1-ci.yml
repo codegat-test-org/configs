@@ -40,7 +40,7 @@ jobs:
     with:
       model-name: access-om2
       environment-name: test
-      config-tag: ${{ github.ref_name }}
+      config-tag: ${{ github.head_ref }}
       test-markers: checksum
     secrets: inherit
     permissions:
