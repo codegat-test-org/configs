@@ -108,7 +108,7 @@ jobs:
           gh run list
           associated_run=$(gh run list \
             --json='databaseId,headBranch,updatedAt,status' \
-            --jq 'select((.[].headBranch == "${{ steps.pr.outputs.branch }}") and (.[].status == "completed")) |= sort_by(.updatedAt) | last | .databaseId')
+            --jq='[.[] | select(.headBranch == "${{ steps.pr.outputs.branch }}" and .status == "completed")] | sort_by(.updatedAt) | last | .databaseId'
           echo "$associated_run"
           echo "---------------"
           gh run list --json='databaseId,headBranch,updatedAt,status'
