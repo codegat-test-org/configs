@@ -24,7 +24,7 @@ jobs:
       # metadata.yaml version after being bumped
       after: ${{ steps.bump.outputs.after }}
       # The type of bump - 'major' or 'minor'
-      type: ${{ steps.bump.outputs.type }}
+      type: ${{ steps.type.outputs.bump }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -133,8 +133,7 @@ jobs:
         env:
           BODY: |
             :white_check_mark: Version bumped from `${{ needs.bump-version.outputs.before }}` to `${{ needs.bump-version.outputs.after }}` :white_check_mark:
-        run:
-          gh pr comment --body "${{ env.BODY }}"
+        run: gh pr comment --body '${{ env.BODY }}'
 
   failure-notifier:
     name: Failure Notifier
@@ -159,4 +158,4 @@ jobs:
         env:
           BODY: |
             :x: Failed to bump VERSION or commit changes, see ${{ env.RUN_URL }} :x:
-        run: gh pr comment --body "${{ env.BODY }}"
+        run: gh pr comment --body '${{ env.BODY }}'
