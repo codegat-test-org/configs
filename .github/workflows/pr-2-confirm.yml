@@ -113,7 +113,7 @@ jobs:
       - name: Update metadata.yaml and Checksum files
         run: |
           yq -i '.version = "${{ needs.bump-version.outputs.after }}"' metadata.yaml
-          mv ${{ env.ARTIFACT_LOCAL_LOCATION }}/*/* testing
+          mv -f ${{ env.ARTIFACT_LOCAL_LOCATION }}/*/* testing
 
       - name: Commit and Push Updates
         run: |
