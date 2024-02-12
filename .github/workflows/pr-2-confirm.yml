@@ -115,6 +115,7 @@ jobs:
           yq -i '.version = "${{ needs.bump-version.outputs.after }}"' metadata.yaml
 
           artifact_name=$(ls ${{ env.ARTIFACT_LOCAL_LOCATION }})
+          tree ${{ env.ARTIFACT_LOCAL_LOCATION }}
           mv ${{ env.ARTIFACT_LOCAL_LOCATION }}/${artifact_name}/ testing
 
       - name: Commit and Push Updates
