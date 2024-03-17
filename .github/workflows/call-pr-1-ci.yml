@@ -1,0 +1,19 @@
+name: Call pr-1-ci.yml workflow
+on:
+  pull_request:
+    branches:
+      - 'release-*'
+      - 'dev-*'
+    paths-ignore:
+      # These are ignored because they don't have anything to do with the model itself
+      - .github/**
+      - tools/**
+      - doc/**
+      - .*
+      - metadata.yaml
+      - README.md
+jobs:
+  call:
+    # We do this so we don't have to propagate CI changes to config branches all the time
+    uses: codegat-test-org/configs/.github/workflows/pr-1-ci.yml@main
+    secrets: inherit

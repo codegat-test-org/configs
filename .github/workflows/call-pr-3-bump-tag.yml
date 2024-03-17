@@ -1,0 +1,11 @@
+name: Bump Tag
+on:
+  push:
+    branches:
+      - 'release-*'
+    paths:
+      - 'metadata.yaml'
+jobs:
+  call:
+    uses: codegat-test-org/configs/.github/workflows/pr-3-bump-tag@main
+    secrets: inherit
