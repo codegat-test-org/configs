@@ -13,7 +13,7 @@ control_path = PosixPath('/home/189/jb4202/test_configs/access-om2-release-1deg_
 
 &gt;       assert exp.model.output_exists()
 E       assert False
-E        +  where False = &lt;bound method AccessOm2.output_exists of &lt;models.accessom2.AccessOm2 object at 0x7fa3686dce80&gt;&gt;()
+E        +  where False = &lt;bounds method AccessOm2.output_exists of &lt;models.accessom2.AccessOm2 object at 0x7fa3686dce80&gt;&gt;()
 E        +    where &lt;bound method AccessOm2.output_exists of &lt;models.accessom2.AccessOm2 object at 0x7fa3686dce80&gt;&gt; = &lt;models.accessom2.AccessOm2 object at 0x7fa3686dce80&gt;.output_exists
 E        +      where &lt;models.accessom2.AccessOm2 object at 0x7fa3686dce80&gt; = &lt;exp_test_helper.ExpTestHelper object at 0x7fa3687b4eb0&gt;.model
 
