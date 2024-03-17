@@ -9,3 +9,5 @@ jobs:
   call:
     uses: codegat-test-org/configs/.github/workflows/pr-3-bump-tag.yml@main
     secrets: inherit
+    permissions:
+      contents: write
