@@ -7,5 +7,5 @@ on:
       - 'metadata.yaml'
 jobs:
   call:
-    uses: codegat-test-org/configs/.github/workflows/pr-3-bump-tag@main
+    uses: codegat-test-org/configs/.github/workflows/pr-3-bump-tag.yml@main
     secrets: inherit
