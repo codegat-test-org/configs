@@ -29,6 +29,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          token: ${{ secrets.GH_COMMIT_CHECK_TOKEN }}
 
       - name: Checkout Associated PR ${{ github.event.issue.number }}
         # Since the trigger for this workflow was on.issue_comment, we need
@@ -113,7 +114,7 @@ jobs:
       - name: Update metadata.yaml and Checksum files
         run: |
           yq -i '.version = "${{ needs.bump-version.outputs.after }}"' metadata.yaml
-          cp -Rf ${{ env.ARTIFACT_LOCAL_LOCATION }}/*/* testing
+          cp --recursive --verbose ${{ env.ARTIFACT_LOCAL_LOCATION }}/*/* testing
 
       - name: Commit and Push Updates
         run: |
