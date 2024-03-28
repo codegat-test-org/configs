@@ -170,7 +170,8 @@ jobs:
     needs:
       - commit-check
       - branch-check
-    if: needs.commit-check.outputs.authorship != vars.GH_ACTIONS_BOT_GIT_USER_NAME && needs.branch-check.result == 'success'
+      - qa-ci
+    if: needs.commit-check.outputs.authorship != vars.GH_ACTIONS_BOT_GIT_USER_NAME
     runs-on: ubuntu-latest
     steps:
       - run: echo "Wow, what great repro CI we are doing!"
