@@ -110,6 +110,8 @@ jobs:
           ref: main
           path: pytest
 
+      - run: cd pytest
+
       - name: Setup Python 3.11
         uses: actions/setup-python@v5
         with:
