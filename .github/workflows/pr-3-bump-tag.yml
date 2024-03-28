@@ -3,6 +3,7 @@
 name: Bump Tag
 on:
   workflow_call:
+  # Workflows that call this workflow use the following triggers:
   # push:
   #   branches:
   #     - 'release-*'
