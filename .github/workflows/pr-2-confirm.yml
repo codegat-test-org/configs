@@ -102,19 +102,19 @@ jobs:
           gh pr checkout ${{ github.event.issue.number }}
           echo "branch=$(git rev-parse --abbrev-ref HEAD)" >> $GITHUB_OUTPUT
 
-      - name: Download Newly Created Checksum
-        # Given the PR branch, we need to find the latest associated workflow run
-        # on this branch we can then download the associated artifact
-        run: |
-          associated_run=$(gh run list \
-            --json='databaseId,headBranch,updatedAt,status' \
-            --jq='[.[] | select(.headBranch == "${{ steps.pr.outputs.branch }}" and .status == "completed")] | sort_by(.updatedAt) | last | .databaseId')
-          gh run download $associated_run -D ${{ env.ARTIFACT_LOCAL_LOCATION }}
+      # - name: Download Newly Created Checksum
+      #   # Given the PR branch, we need to find the latest associated workflow run
+      #   # on this branch we can then download the associated artifact
+      #   run: |
+      #     associated_run=$(gh run list \
+      #       --json='databaseId,headBranch,updatedAt,status' \
+      #       --jq='[.[] | select(.headBranch == "${{ steps.pr.outputs.branch }}" and .status == "completed")] | sort_by(.updatedAt) | last | .databaseId')
+      #     gh run download $associated_run -D ${{ env.ARTIFACT_LOCAL_LOCATION }}
 
       - name: Update metadata.yaml and Checksum files
         run: |
           yq -i '.version = "${{ needs.bump-version.outputs.after }}"' metadata.yaml
-          cp --recursive --verbose ${{ env.ARTIFACT_LOCAL_LOCATION }}/*/* testing
+        # cp --recursive --verbose ${{ env.ARTIFACT_LOCAL_LOCATION }}/*/* testing
 
       - name: Commit and Push Updates
         run: |

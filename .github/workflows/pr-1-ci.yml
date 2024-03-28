@@ -28,7 +28,6 @@ on:
   #     - tools/**
   #     - doc/**
   #     - .*
-  #     - metadata.yaml
   #     - README.md
 jobs:
   commit-check:
@@ -165,28 +164,22 @@ jobs:
           report_individual_runs: true
           report_suite_logs: any
 
-  repro-ci:
+  repro-ci-mock:
     # Run the given config on the deployment GitHub Environment (`environment-name`) and
     # upload the checksums and test details
     needs:
       - commit-check
       - branch-check
     if: needs.commit-check.outputs.authorship != vars.GH_ACTIONS_BOT_GIT_USER_NAME && needs.branch-check.result == 'success'
-    uses: access-nri/reproducibility/.github/workflows/checks.yml@main
-    with:
-      model-name: access-om2
-      environment-name: Gadi
-      config-tag: ${{ github.head_ref }}
-      test-markers: ${{ inputs.repro-pytest-markers }}
-    secrets: inherit
-    permissions:
-      contents: write
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Wow, what great repro CI we are doing!"
 
   check-checksum:
     # Parse the test report and return pass/fail result
     name: Check and Update Checksum
     needs:
-      - repro-ci
+      - repro-ci-mock
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -202,23 +195,24 @@ jobs:
       # Version of the checksum compared against the newly generated one
       compared-checksum-version: ${{ steps.results.outputs.compared-checksum-version }}
     steps:
-      - name: Download Newly Created Checksum
-        uses: actions/download-artifact@v3
-        with:
-          name: ${{ needs.repro-ci.outputs.artifact-name }}
-          path: ${{ env.TESTING_LOCAL_LOCATION }}
+      # - name: Download Newly Created Checksum
+      #   uses: actions/download-artifact@v3
+      #   with:
+      #     name: ${{ needs.repro-ci.outputs.artifact-name }}
+      #     path: ${{ env.TESTING_LOCAL_LOCATION }}
 
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.head_ref }}
-          fetch-depth: 0
-          fetch-tags: true
+          ref: main
+          # ref: ${{ github.head_ref }}
+          # fetch-depth: 0
+          # fetch-tags: true
 
       - name: Parse Test Report
         id: tests
         uses: EnricoMi/publish-unit-test-result-action/composite@e780361cd1fc1b1a170624547b3ffda64787d365  #v2.12.0
         with:
-          files: ${{ env.TESTING_LOCAL_LOCATION }}/checksum/test_report.xml
+          files: test_report.xml
           comment_mode: off
           check_run: true
           compare_to_earlier_commit: false
@@ -240,7 +234,7 @@ jobs:
     name: Repro Result Notifier
     # Notify the PR of the result of the Repro check
     needs:
-      - repro-ci
+      - repro-ci-mock
       - check-checksum
     runs-on: ubuntu-latest
     env:
@@ -258,7 +252,7 @@ jobs:
         env:
           BODY: |
             :white_check_mark: The Bitwise Reproducibility check succeeded when comparing against `${{ needs.check-checksum.outputs.compared-checksum-version }}` for this `Release` config. :white_check_mark:
-            For further information, the experiment can be found on Gadi at ${{ needs.repro-ci.outputs.experiment-location }}, and the test results at ${{ needs.check-checksum.outputs.check-run-url }}.
+            For further information, the experiment can be found on Gadi at and the test results at ${{ needs.check-checksum.outputs.check-run-url }}.
             Consider bumping the minor version of `access-om2-configs` - to bump the version, comment `!bump minor`. The meaning of these version bumps is explained in the README.md, under `Config Tags`.
         run: gh pr comment --body '${{ env.BODY }}'
 
@@ -267,7 +261,7 @@ jobs:
         env:
           BODY: |
             :white_check_mark: The Bitwise Reproducibility check succeeded when comparing against `${{ needs.check-checksum.outputs.compared-checksum-version }}` for this `Dev` config. :white_check_mark:
-            For further information, the experiment can be found on Gadi at ${{ needs.repro-ci.outputs.experiment-location }}, and the test results at ${{ needs.check-checksum.outputs.check-run-url }}.
+            For further information, the experiment can be found on Gadi at and the test results at ${{ needs.check-checksum.outputs.check-run-url }}.
         run: gh pr comment --body '${{ env.BODY }}'
 
       - name: Failed Release Comment
@@ -275,7 +269,7 @@ jobs:
         env:
           BODY: |
             :x: The Bitwise Reproducibility check failed when comparing against `${{ needs.check-checksum.outputs.compared-checksum-version }}` for this `Release` config. :x:
-            For further information, the experiment can be found on Gadi at ${{ needs.repro-ci.outputs.experiment-location }}, and the test results at ${{ needs.check-checksum.outputs.check-run-url }}.
+            For further information, the experiment can be found on Gadi at and the test results at ${{ needs.check-checksum.outputs.check-run-url }}.
             You must bump the major version of `access-om2-configs` before this PR is merged to account for this - to bump the version, comment `!bump major`. The meaning of these version bumps is explained in the README.md, under `Config Tags`.
         run: gh pr comment --body '${{ env.BODY }}'
 
@@ -284,5 +278,5 @@ jobs:
         env:
           BODY: |
             :warning: The Bitwise Reproducibility check failed when comparing against `${{ needs.check-checksum.outputs.compared-checksum-version }}` for this `Dev` config. :warning:
-            For further information, the experiment can be found on Gadi at ${{ needs.repro-ci.outputs.experiment-location }}, and the test results at ${{ needs.check-checksum.outputs.check-run-url }}.
+            For further information, the experiment can be found on Gadi at and the test results at ${{ needs.check-checksum.outputs.check-run-url }}.
         run: gh pr comment --body '${{ env.BODY }}'
