@@ -108,9 +108,6 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: main
-          path: pytest
-
-      - run: cd pytest
 
       - name: Setup Python 3.11
         uses: actions/setup-python@v5
@@ -119,7 +116,6 @@ jobs:
           cache: pip
 
       - name: Install requirements.txt
-        working-directory: ./pytest
         run: pip install -r ./test/requirements.txt
 
       - name: Infer Model-Specific Checks
@@ -172,8 +168,7 @@ jobs:
     needs:
       - commit-check
       - branch-check
-      - qa-ci
-    if: needs.commit-check.outputs.authorship != vars.GH_ACTIONS_BOT_GIT_USER_NAME
+    if: needs.commit-check.outputs.authorship != vars.GH_ACTIONS_BOT_GIT_USER_NAME && needs.branch-check.result == 'success'
     runs-on: ubuntu-latest
     steps:
       - run: echo "Wow, what great repro CI we are doing!"
