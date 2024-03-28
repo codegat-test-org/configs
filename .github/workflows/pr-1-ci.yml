@@ -121,7 +121,7 @@ jobs:
       - name: Infer Model-Specific Checks
         id: model
         if: inputs.qa-pytest-add-model-markers
-        run:
+        run: |
           if [[ "${{ contains(github.base_ref, 'bgc') }}" == "true" ]]; then
             echo "Using model-specific access_om2_bgc pytest marker"
             echo "markers=access_om2_bgc" >> $GITHUB_OUTPUT
@@ -168,6 +168,7 @@ jobs:
     needs:
       - commit-check
       - branch-check
+      - qa-ci
     if: needs.commit-check.outputs.authorship != vars.GH_ACTIONS_BOT_GIT_USER_NAME && needs.branch-check.result == 'success'
     runs-on: ubuntu-latest
     steps:
